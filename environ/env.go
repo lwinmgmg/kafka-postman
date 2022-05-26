@@ -14,6 +14,8 @@ type Environ struct {
 	PUBLISHR_WORKER   int
 	CONSUMER_WORKER   int
 	SETTING_JSON_PATH string
+	DB_TYPE           string
+	DB_DSN            string
 }
 
 func GetAllEnvSettings() *Environ {
@@ -29,6 +31,7 @@ func init() {
 	publisherWorker := toInt(GetDefaultValue("PUBLISHR_WORKER", 2, true))
 	env = &Environ{
 		PUBLISHR_WORKER: publisherWorker,
+		DB_TYPE:         "PSQL",
 	}
 }
 
