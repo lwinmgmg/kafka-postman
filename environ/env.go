@@ -11,11 +11,16 @@ import (
 var env *Environ
 
 type Environ struct {
-	PUBLISHR_WORKER   int
-	CONSUMER_WORKER   int
-	SETTING_JSON_PATH string
-	DB_TYPE           string
-	DB_DSN            string
+	PUBLISHER_WORKER      int
+	PUBLISHER_QUEUE_COUNT int
+	PUBLISH_LIMIT         int
+	PUBLISH_INTERVAL      int
+	PUBLISH_RETRY         int
+	CONSUMER_WORKER       int
+	SETTING_JSON_PATH     string
+	DB_TYPE               string
+	DB_DSN                string
+	TABLE_PREFIX          string
 }
 
 func GetAllEnvSettings() *Environ {
@@ -28,10 +33,15 @@ func init() {
 		panic("Please export KP_ENV_PATH")
 	}
 	ReadEnvFile(envFilePath)
-	publisherWorker := toInt(GetDefaultValue("PUBLISHR_WORKER", 2, true))
+	publisherWorker := toInt(GetDefaultValue("PUBLISHER_WORKER", 2, true))
 	env = &Environ{
-		PUBLISHR_WORKER: publisherWorker,
-		DB_TYPE:         "PSQL",
+		PUBLISHER_WORKER:      publisherWorker,
+		PUBLISHER_QUEUE_COUNT: 10, //buffer size for channel
+		PUBLISH_LIMIT:         10,
+		PUBLISH_INTERVAL:      1,
+		PUBLISH_RETRY:         5,
+		DB_TYPE:               "PSQL",
+		TABLE_PREFIX:          "kp",
 	}
 }
 

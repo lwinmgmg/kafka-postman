@@ -5,8 +5,12 @@ import (
 	"encoding/base64"
 	"encoding/json"
 	"fmt"
+	"os"
+	"os/signal"
+	"syscall"
 	"time"
 
+	"github.com/lwinmgmg/kafka-postman/kafkaproducer"
 	"github.com/segmentio/kafka-go"
 	"github.com/segmentio/kafka-go/sasl/plain"
 )
@@ -84,11 +88,21 @@ func ReadKafka(acl plain.Mechanism) {
 }
 
 func main() {
-	fmt.Println("Lwin Mg Mg")
-	acl := plain.Mechanism{
-		Username: "admin",
-		Password: "admin-secret",
-	}
+	c := make(chan os.Signal)
+	signal.Notify(c, os.Interrupt, syscall.SIGTERM)
+	go func() {
+		<-c
+		close(kafkaproducer.GetDoneChannel())
+		<-kafkaproducer.GetCallBackChannel()
+		os.Exit(1)
+	}()
+	kafkaproducer.ProducerMain()
+
+	// fmt.Println("Lwin Mg Mg")
+	// acl := plain.Mechanism{
+	// 	Username: "admin",
+	// 	Password: "admin-secret",
+	// }
 	// WriteKafka(acl)
-	ReadKafka(acl)
+	// ReadKafka(acl)
 }
