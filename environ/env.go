@@ -33,12 +33,12 @@ func init() {
 		panic("Please export KP_ENV_PATH")
 	}
 	ReadEnvFile(envFilePath)
-	publisherWorker := toInt(GetDefaultValue("PUBLISHER_WORKER", 2, true))
+	publisherWorker := toInt(GetDefaultValue("PUBLISHER_WORKER", 5, true))
 	env = &Environ{
 		PUBLISHER_WORKER:      publisherWorker,
 		PUBLISHER_QUEUE_COUNT: 10, //buffer size for channel
-		PUBLISH_LIMIT:         10,
-		PUBLISH_INTERVAL:      1,
+		PUBLISH_LIMIT:         20,
+		PUBLISH_INTERVAL:      500,
 		PUBLISH_RETRY:         5,
 		DB_TYPE:               "PSQL",
 		TABLE_PREFIX:          "kp",

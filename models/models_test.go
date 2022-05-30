@@ -133,6 +133,35 @@ func TestGetByFilter(t *testing.T) {
 	fmt.Println(localIdList)
 }
 
+func TestUpdateByID(t *testing.T) {
+	mgr := models.NewManager(&DummyData{})
+	dest := []DummyData{}
+	id := idList[0]
+	if err := mgr.GetForUpdate([]uint{id}, &dest, func(db *gorm.DB) error {
+		updateData := map[string]any{
+			"age":  50,
+			"name": "lmm50",
+		}
+		if err := mgr.UpdateByID(id, updateData); err == nil {
+			t.Errorf("GetForUpdate Lock is not working")
+		}
+		updateData["age"] = 100
+		if err := mgr.UpdateByIDTx(id, updateData, db); err != nil {
+			t.Errorf("Error on updatebyiTx : %v", err)
+		}
+		return nil
+	}); err != nil {
+		t.Errorf("Error on getforupdate : %v", err)
+	}
+	newDest := struct{ Age uint }{}
+	if err := mgr.GetByID(id, &newDest); err != nil {
+		t.Errorf("Getting error on getbyid : %v", err)
+	}
+	if newDest.Age != 100 {
+		t.Errorf("Expecting age %v, Getting : %v", 100, newDest.Age)
+	}
+}
+
 func TestGetForUpdate(t *testing.T) {
 	mgr := models.NewManager(&DummyData{})
 	dest := []DummyData{}

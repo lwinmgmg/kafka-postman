@@ -2,7 +2,6 @@ package kafkaproducer
 
 import (
 	"fmt"
-	"math/rand"
 	"time"
 
 	"github.com/lwinmgmg/kafka-postman/environ"
@@ -11,6 +10,7 @@ import (
 )
 
 var (
+	chanTopicMap map[string]int
 	chanList     []chan uint
 	env          *environ.Environ
 	done         chan struct{}
@@ -24,7 +24,7 @@ func init() {
 	confirm = make(chan struct{}, env.PUBLISHER_WORKER)
 	done = make(chan struct{})
 	callBackChan = make(chan struct{})
-
+	chanTopicMap = make(map[string]int, 20)
 	for i := 1; i <= env.PUBLISHER_WORKER; i++ {
 		ch := make(chan uint, env.PUBLISHER_QUEUE_COUNT)
 		go producerhelper.Service(ch, done, confirm, i)
@@ -46,19 +46,29 @@ func GetCallBackChannel() chan struct{} {
 
 func ProducerMain() {
 	go func() {
+		mapIndexCal := 0
 		for {
-			var outBoxIDList []struct {
-				ID uint
-			} = make([]struct{ ID uint }, 0, env.PUBLISH_LIMIT)
+			var outBoxDataList []struct {
+				ID    uint
+				Topic string
+			} = make([]struct {
+				ID    uint
+				Topic string
+			}, 0, env.PUBLISH_LIMIT)
 			outboxMgr := models.NewManager(&models.OutBox{})
-			if err := outboxMgr.GetByFilter(&outBoxIDList, "state=? ORDER BY id LIMIT ?", models.DRAFT, env.PUBLISH_LIMIT); err != nil {
+			if err := outboxMgr.GetByFilter(&outBoxDataList, "state=? ORDER BY id LIMIT ?", models.DRAFT, env.PUBLISH_LIMIT); err != nil {
 				fmt.Println(err)
 			}
-			for _, v := range outBoxIDList {
-				randomIndex := rand.Intn(len(chanList))
+			for _, v := range outBoxDataList {
+				randomIndex, ok := chanTopicMap[v.Topic]
+				if !ok {
+					randomIndex = mapIndexCal % env.PUBLISHER_WORKER
+					chanTopicMap[v.Topic] = randomIndex
+					mapIndexCal += 1
+				}
 				chanList[randomIndex] <- v.ID
 			}
-			time.Sleep(time.Second * time.Duration(env.PUBLISH_INTERVAL))
+			time.Sleep(time.Millisecond * time.Duration(env.PUBLISH_INTERVAL))
 		}
 	}()
 	confirmSignalCount := 0

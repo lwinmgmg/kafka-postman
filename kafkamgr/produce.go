@@ -1,8 +1,13 @@
-package kafka_mgr
+package kafkamgr
 
 import (
+	"context"
+	"fmt"
+	"time"
+
 	"github.com/lwinmgmg/kafka-postman/environ"
 	"github.com/segmentio/kafka-go"
+	"github.com/segmentio/kafka-go/protocol"
 	"github.com/segmentio/kafka-go/sasl/plain"
 )
 
@@ -21,7 +26,7 @@ func init() {
 	}
 }
 
-func Produce(topic, header, key, value string) error {
+func Produce(topic, key, value string, headers ...protocol.Header) error {
 	var writer *kafka.Writer
 	var ok bool = false
 	if writer, ok = ConnList[topic]; !ok {
@@ -36,10 +41,26 @@ func Produce(topic, header, key, value string) error {
 		)
 		ConnList[topic] = writer
 	}
-	for i:=0; i<env.PUBLISH_RETRY; i++{
-		
+	var err error
+	for i := 0; i < env.PUBLISH_RETRY; i++ {
+		ctx := context.Background()
+		timeoutCtx, cancel := context.WithTimeout(ctx, time.Second*5)
+		defer cancel()
+		err = writer.WriteMessages(
+			timeoutCtx,
+			kafka.Message{
+				Key:     []byte(key),
+				Value:   []byte(value),
+				Headers: headers,
+			},
+		)
+		if err != nil {
+			fmt.Printf("Error on producing message : %v\n", err)
+			continue
+		}
+		break
 	}
-	return nil
+	return err
 }
 
 // func WriteKafka(acl plain.Mechanism) {

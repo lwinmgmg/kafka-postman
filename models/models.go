@@ -1,7 +1,9 @@
 package models
 
 import (
+	"context"
 	"fmt"
+	"time"
 
 	"github.com/lwinmgmg/kafka-postman/dbm"
 	"github.com/lwinmgmg/kafka-postman/environ"
@@ -50,8 +52,18 @@ func (mgr *Manager) GetByIDs(ids []uint, dest any) error {
 	return db.Model(mgr.Table).Find(dest, ids).Error
 }
 
-func (mgr *Manager) GetByFilter(dest interface{}, cond string, args ...interface{}) error {
+func (mgr *Manager) GetByFilter(dest any, cond string, args ...any) error {
 	return db.Model(mgr.Table).Where(cond, args...).Find(dest).Error
+}
+
+func (mgr *Manager) UpdateByID(id uint, data any) error {
+	return mgr.UpdateByIDTx(id, data, db)
+}
+
+func (mgr *Manager) UpdateByIDTx(id uint, data any, tx *gorm.DB) error {
+	ctx, cancel := context.WithTimeout(context.Background(), time.Second*1)
+	defer cancel()
+	return tx.Model(mgr.Table).WithContext(ctx).Where("id=?", id).Updates(data).Error
 }
 
 func (mgr *Manager) GetForUpdate(ids []uint, dest any, callBack UpdateFunc) (err error) {
