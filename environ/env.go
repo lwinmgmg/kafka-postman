@@ -38,7 +38,7 @@ func init() {
 		PUBLISHER_WORKER:      publisherWorker,
 		PUBLISHER_QUEUE_COUNT: 10, //buffer size for channel
 		PUBLISH_LIMIT:         20,
-		PUBLISH_INTERVAL:      500,
+		PUBLISH_INTERVAL:      2000,
 		PUBLISH_RETRY:         5,
 		DB_TYPE:               "PSQL",
 		TABLE_PREFIX:          "kp",

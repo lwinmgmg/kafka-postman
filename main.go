@@ -11,11 +11,14 @@ import (
 	"time"
 
 	"github.com/lwinmgmg/kafka-postman/kafkaproducer"
+	"github.com/lwinmgmg/kafka-postman/logmgr"
 	"github.com/segmentio/kafka-go"
 	"github.com/segmentio/kafka-go/sasl/plain"
 )
 
 const topic string = "mynewtopic"
+
+var logger = logmgr.GetLogger()
 
 type UserData struct {
 	Name         string `json:"name"`
@@ -80,8 +83,7 @@ func ReadKafka(acl plain.Mechanism) {
 			fmt.Printf("Error on reading mesg : %v", err)
 			break
 		}
-		fmt.Println(string(mesg.Value))
-		fmt.Println("***************************************************************")
+		logger.Info(string(mesg.Value))
 		r.CommitMessages(context.Background(), mesg)
 	}
 
@@ -97,7 +99,7 @@ func main() {
 		os.Exit(1)
 	}()
 	kafkaproducer.ProducerMain()
-
+	logger.Close()
 	// fmt.Println("Lwin Mg Mg")
 	// acl := plain.Mechanism{
 	// 	Username: "admin",

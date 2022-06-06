@@ -1,11 +1,11 @@
 package kafkaproducer
 
 import (
-	"fmt"
 	"time"
 
 	"github.com/lwinmgmg/kafka-postman/environ"
 	"github.com/lwinmgmg/kafka-postman/kafkaproducer/producerhelper"
+	"github.com/lwinmgmg/kafka-postman/logmgr"
 	"github.com/lwinmgmg/kafka-postman/models"
 )
 
@@ -16,6 +16,7 @@ var (
 	done         chan struct{}
 	confirm      chan struct{} //confirm channel for all producer worker stopped properly
 	callBackChan chan struct{}
+	logger       = logmgr.GetLogger()
 )
 
 func init() {
@@ -57,7 +58,7 @@ func ProducerMain() {
 			}, 0, env.PUBLISH_LIMIT)
 			outboxMgr := models.NewManager(&models.OutBox{})
 			if err := outboxMgr.GetByFilter(&outBoxDataList, "state=? ORDER BY id LIMIT ?", models.DRAFT, env.PUBLISH_LIMIT); err != nil {
-				fmt.Println(err)
+				logger.Error("%v", err)
 			}
 			for _, v := range outBoxDataList {
 				randomIndex, ok := chanTopicMap[v.Topic]

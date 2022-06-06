@@ -2,10 +2,10 @@ package kafkamgr
 
 import (
 	"context"
-	"fmt"
 	"time"
 
 	"github.com/lwinmgmg/kafka-postman/environ"
+	"github.com/lwinmgmg/kafka-postman/logmgr"
 	"github.com/segmentio/kafka-go"
 	"github.com/segmentio/kafka-go/protocol"
 	"github.com/segmentio/kafka-go/sasl/plain"
@@ -15,6 +15,7 @@ var (
 	ConnList map[string]*kafka.Writer
 	env      *environ.Environ
 	acl      *plain.Mechanism
+	logger   = logmgr.GetLogger()
 )
 
 func init() {
@@ -55,7 +56,7 @@ func Produce(topic, key, value string, headers ...protocol.Header) error {
 			},
 		)
 		if err != nil {
-			fmt.Printf("Error on producing message : %v\n", err)
+			logger.Error("Error on producing message : %v", err)
 			continue
 		}
 		break

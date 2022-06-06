@@ -1,13 +1,14 @@
 package producerhelper
 
 import (
-	"fmt"
-
 	"github.com/lwinmgmg/kafka-postman/kafkamgr"
+	"github.com/lwinmgmg/kafka-postman/logmgr"
 	"github.com/lwinmgmg/kafka-postman/models"
 	"github.com/segmentio/kafka-go/protocol"
 	"gorm.io/gorm"
 )
+
+var logger = logmgr.GetLogger()
 
 func produceByID(id uint) error {
 	outboxMgr := models.NewManager(&models.OutBox{})
@@ -32,7 +33,7 @@ func produceByID(id uint) error {
 }
 
 func Service(ch <-chan uint, done <-chan struct{}, confirmChan chan<- struct{}, number int) {
-	fmt.Printf("Publisher Channel [%v] started\n", number)
+	logger.Info("Publisher Channel [%v] started", number)
 	breakSig := false
 	for !breakSig {
 		select {
@@ -40,16 +41,16 @@ func Service(ch <-chan uint, done <-chan struct{}, confirmChan chan<- struct{}, 
 			if !ok {
 				breakSig = true
 			}
-			fmt.Printf("Channel [%v] got ID [%v]\n", number, id)
+			logger.Info("Channel [%v] got ID [%v]", number, id)
 			if err := produceByID(id); err != nil {
-				fmt.Printf("Channel [%v] faild to produce ID [%v]\n", number, id)
+				logger.Error("Channel [%v] faild to produce ID [%v]", number, id)
 				break
 			}
-			fmt.Printf("Channel [%v] done ID [%v]\n", number, id)
+			logger.Info("Channel [%v] done ID [%v]", number, id)
 			break
 		case <-done:
 			breakSig = true
-			fmt.Printf("Publisher Channel [%v] has stopped successfully\n", number)
+			logger.Info("Publisher Channel [%v] has stopped successfully", number)
 		}
 	}
 	confirmChan <- struct{}{}
