@@ -3,6 +3,7 @@ package kafkaproducer
 import (
 	"time"
 
+	"github.com/lwinmgmg/kafka-postman/dbm"
 	"github.com/lwinmgmg/kafka-postman/environ"
 	"github.com/lwinmgmg/kafka-postman/kafkaproducer/producerhelper"
 	"github.com/lwinmgmg/kafka-postman/logmgr"
@@ -56,7 +57,7 @@ func ProducerMain() {
 				ID    uint
 				Topic string
 			}, 0, env.PUBLISH_LIMIT)
-			outboxMgr := models.NewManager(&models.OutBox{})
+			outboxMgr := models.NewManager(&models.OutBox{}, dbm.GetDB())
 			if err := outboxMgr.GetByFilter(&outBoxDataList, "state=? ORDER BY id LIMIT ?", models.DRAFT, env.PUBLISH_LIMIT); err != nil {
 				logger.Error("%v", err)
 			}

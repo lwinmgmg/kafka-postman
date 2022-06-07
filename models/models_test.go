@@ -24,6 +24,7 @@ var (
 		"topic2",
 		"topic3",
 	}
+	db *gorm.DB
 )
 
 type DummyData struct {
@@ -70,7 +71,7 @@ func prepareData(db *gorm.DB) {
 // }
 
 func TestMain(m *testing.M) {
-	db := dbm.GetDB()
+	db = dbm.GetDB()
 	db.AutoMigrate(&DummyData{})
 	prepareData(db)
 	exitCode := m.Run()
@@ -79,7 +80,7 @@ func TestMain(m *testing.M) {
 }
 
 func TestGetByID(t *testing.T) {
-	mgr := models.NewManager(&DummyData{})
+	mgr := models.NewManager(&DummyData{}, db)
 	var user struct {
 		ID   uint
 		Name string
@@ -91,7 +92,7 @@ func TestGetByID(t *testing.T) {
 }
 
 func TestGetByIDs(t *testing.T) {
-	mgr := models.NewManager(&DummyData{})
+	mgr := models.NewManager(&DummyData{}, db)
 	var users []struct {
 		ID   uint
 		Name string
@@ -111,7 +112,7 @@ func TestGetByIDs(t *testing.T) {
 }
 
 func TestGetByFilter(t *testing.T) {
-	mgr := models.NewManager(&DummyData{})
+	mgr := models.NewManager(&DummyData{}, db)
 	var users []struct {
 		ID   uint
 		Name string
@@ -134,7 +135,7 @@ func TestGetByFilter(t *testing.T) {
 }
 
 func TestUpdateByID(t *testing.T) {
-	mgr := models.NewManager(&DummyData{})
+	mgr := models.NewManager(&DummyData{}, db)
 	dest := []DummyData{}
 	id := idList[0]
 	if err := mgr.GetForUpdate([]uint{id}, &dest, func(db *gorm.DB) error {
@@ -163,7 +164,7 @@ func TestUpdateByID(t *testing.T) {
 }
 
 func TestGetForUpdate(t *testing.T) {
-	mgr := models.NewManager(&DummyData{})
+	mgr := models.NewManager(&DummyData{}, db)
 	dest := []DummyData{}
 	if err := mgr.GetForUpdate(idList, &dest, func(tx *gorm.DB) error {
 		if len(dest) != len(idList) {

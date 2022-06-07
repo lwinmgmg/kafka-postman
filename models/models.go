@@ -12,7 +12,6 @@ import (
 )
 
 var (
-	db     *gorm.DB
 	env    *environ.Environ
 	Prefix *string
 )
@@ -20,7 +19,7 @@ var (
 type UpdateFunc func(*gorm.DB) error
 
 func init() {
-	db = dbm.GetDB()
+	db := dbm.GetDB()
 	env = environ.GetAllEnvSettings()
 	Prefix = &env.TABLE_PREFIX
 	db.AutoMigrate(&OutBox{})
@@ -32,32 +31,34 @@ type Table interface {
 
 type Manager struct {
 	Table
+	Db *gorm.DB
 }
 
-func NewManager(table Table) *Manager {
+func NewManager(table Table, db *gorm.DB) *Manager {
 	return &Manager{
 		Table: table,
+		Db:    db,
 	}
 }
 
 func (mgr *Manager) Create(data any) error {
-	return db.Model(mgr.Table).Create(data).Error
+	return mgr.Db.Model(mgr.Table).Create(data).Error
 }
 
 func (mgr *Manager) GetByID(id uint, dest any) error {
-	return db.Model(mgr.Table).Take(dest, id).Error
+	return mgr.Db.Model(mgr.Table).Take(dest, id).Error
 }
 
 func (mgr *Manager) GetByIDs(ids []uint, dest any) error {
-	return db.Model(mgr.Table).Find(dest, ids).Error
+	return mgr.Db.Model(mgr.Table).Find(dest, ids).Error
 }
 
 func (mgr *Manager) GetByFilter(dest any, cond string, args ...any) error {
-	return db.Model(mgr.Table).Where(cond, args...).Find(dest).Error
+	return mgr.Db.Model(mgr.Table).Where(cond, args...).Find(dest).Error
 }
 
 func (mgr *Manager) UpdateByID(id uint, data any) error {
-	return mgr.UpdateByIDTx(id, data, db)
+	return mgr.UpdateByIDTx(id, data, mgr.Db)
 }
 
 func (mgr *Manager) UpdateByIDTx(id uint, data any, tx *gorm.DB) error {
@@ -67,7 +68,7 @@ func (mgr *Manager) UpdateByIDTx(id uint, data any, tx *gorm.DB) error {
 }
 
 func (mgr *Manager) GetForUpdate(ids []uint, dest any, callBack UpdateFunc) (err error) {
-	tx := db.Begin()
+	tx := mgr.Db.Begin()
 	defer func() {
 		if rec := recover(); rec != nil {
 			tx.Rollback()

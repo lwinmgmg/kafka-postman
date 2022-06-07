@@ -1,6 +1,7 @@
 package producerhelper
 
 import (
+	"github.com/lwinmgmg/kafka-postman/dbm"
 	"github.com/lwinmgmg/kafka-postman/kafkamgr"
 	"github.com/lwinmgmg/kafka-postman/logmgr"
 	"github.com/lwinmgmg/kafka-postman/models"
@@ -11,7 +12,7 @@ import (
 var logger = logmgr.GetLogger()
 
 func produceByID(id uint) error {
-	outboxMgr := models.NewManager(&models.OutBox{})
+	outboxMgr := models.NewManager(&models.OutBox{}, dbm.GetDB())
 	var datas []models.OutBox
 	return outboxMgr.GetForUpdate([]uint{id}, &datas, func(db *gorm.DB) error {
 		if len(datas) != 1 || datas[0].State != models.DRAFT {
