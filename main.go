@@ -10,15 +10,22 @@ import (
 	"syscall"
 	"time"
 
-	"github.com/lwinmgmg/kafka-postman/kafkaproducer"
+	"github.com/lwinmgmg/kafka-postman/dbm"
+	"github.com/lwinmgmg/kafka-postman/environ"
+	"github.com/lwinmgmg/kafka-postman/kafkamgr"
 	"github.com/lwinmgmg/kafka-postman/logmgr"
+	"github.com/lwinmgmg/kafka-postman/models"
+	"github.com/lwinmgmg/kafka-postman/producers"
 	"github.com/segmentio/kafka-go"
 	"github.com/segmentio/kafka-go/sasl/plain"
 )
 
 const topic string = "mynewtopic"
 
-var logger = logmgr.GetLogger()
+var (
+	logger = logmgr.GetLogger()
+	env    = environ.GetAllEnvSettings()
+)
 
 type UserData struct {
 	Name         string `json:"name"`
@@ -92,14 +99,22 @@ func ReadKafka(acl plain.Mechanism) {
 func main() {
 	c := make(chan os.Signal)
 	signal.Notify(c, os.Interrupt, syscall.SIGTERM)
+	rDB := dbm.GetDB()
+	wDB := dbm.GetDB()
+	kafkaServer := kafkamgr.NewKafkaServer([]string{"localhost:9092"}, env.PUBLISH_RETRY, &plain.Mechanism{Username: "admin", Password: "admin-secret"})
+	outboxProducer := producers.OutBoxManager{
+		ReaderModelMgr: models.NewManager(&models.OutBox{}, rDB),
+		WriterModelMgr: models.NewManager(&models.OutBox{}, wDB),
+	}
+	producerMgr := producers.NewProducer(env.PUBLISHER_WORKER, env.PUBLISH_LIMIT, kafkaServer, &outboxProducer)
 	go func() {
 		<-c
-		close(kafkaproducer.GetDoneChannel())
-		<-kafkaproducer.GetCallBackChannel()
+		producerMgr.Stop()
+		logger.Close()
 		os.Exit(1)
 	}()
-	kafkaproducer.ProducerMain()
-	logger.Close()
+	producerMgr.Start()
+	time.Sleep(time.Second * 100)
 	// fmt.Println("Lwin Mg Mg")
 	// acl := plain.Mechanism{
 	// 	Username: "admin",

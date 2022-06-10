@@ -12,38 +12,52 @@ import (
 )
 
 var (
-	ConnList map[string]*kafka.Writer
-	env      *environ.Environ
-	acl      *plain.Mechanism
-	logger   = logmgr.GetLogger()
+	env    *environ.Environ
+	logger = logmgr.GetLogger()
 )
 
-func init() {
-	env = environ.GetAllEnvSettings()
-	ConnList = make(map[string]*kafka.Writer, 10)
-	acl = &plain.Mechanism{
-		Username: "admin",
-		Password: "admin-secret",
+// func init() {
+// 	env = environ.GetAllEnvSettings()
+// 	ConnList = make(map[string]*kafka.Writer, 10)
+// 	acl = &plain.Mechanism{
+// 		Username: "admin",
+// 		Password: "admin-secret",
+// 	}
+// }
+
+type KafkaServer struct {
+	ConnTopicMap map[string]*kafka.Writer
+	Brokers      []string
+	RetryCount        int
+	Acl          *plain.Mechanism
+}
+
+func NewKafkaServer(brokerList []string, retryCount int, acl *plain.Mechanism) *KafkaServer {
+	return &KafkaServer{
+		ConnTopicMap: make(map[string]*kafka.Writer),
+		Brokers:      brokerList,
+		RetryCount:        retryCount,
+		Acl:          acl,
 	}
 }
 
-func Produce(topic, key, value string, headers ...protocol.Header) error {
+func (ks *KafkaServer) Produce(topic, key, value string, headers ...protocol.Header) error {
 	var writer *kafka.Writer
 	var ok bool = false
-	if writer, ok = ConnList[topic]; !ok {
+	if writer, ok = ks.ConnTopicMap[topic]; !ok {
 		writer = kafka.NewWriter(
 			kafka.WriterConfig{
 				Brokers: []string{"localhost:9092"},
 				Dialer: &kafka.Dialer{
-					SASLMechanism: *acl,
+					SASLMechanism: *ks.Acl,
 				},
 				Topic: topic,
 			},
 		)
-		ConnList[topic] = writer
+		ks.ConnTopicMap[topic] = writer
 	}
 	var err error
-	for i := 0; i < env.PUBLISH_RETRY; i++ {
+	for i := 0; i < ks.RetryCount; i++ {
 		ctx := context.Background()
 		timeoutCtx, cancel := context.WithTimeout(ctx, time.Second*5)
 		defer cancel()

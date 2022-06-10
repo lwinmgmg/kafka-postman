@@ -6,6 +6,7 @@ import (
 	"testing"
 
 	"github.com/lwinmgmg/kafka-postman/kafkamgr"
+	"github.com/segmentio/kafka-go/sasl/plain"
 )
 
 func TestMain(m *testing.M) {
@@ -22,7 +23,8 @@ func TestProduce(t *testing.T) {
 	if err != nil {
 		t.Error(err)
 	}
-	if err := kafkamgr.Produce("test_topic", "user", string(dataMapByte)); err != nil {
+	kafkaServer := kafkamgr.NewKafkaServer([]string{"localhost:9092"}, 5, &plain.Mechanism{Username: "admin", Password: "admin-secret"})
+	if err := kafkaServer.Produce("test_topic", "user", string(dataMapByte)); err != nil {
 		t.Errorf("Error on produce message : %v", err)
 	}
 }
